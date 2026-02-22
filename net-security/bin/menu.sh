@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Подключаем init.sh — он сам определяет BASE_DIR, BIN_DIR и т.д.
-source "$HOME/scripts/git-security/lib/init.sh"
+source "$HOME/scripts/git-security/net-security/lib/init.sh"
 
 clear
 

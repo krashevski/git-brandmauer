@@ -15,9 +15,9 @@
 set -euo pipefail
 
 # Подключаем init.sh — он сам определяет BASE_DIR, BIN_DIR и т.д.
-source "$HOME/scripts/git-security/lib/init.sh"
+source "$HOME/scripts/git-security/net-security/lib/init.sh"
 
-STATE_DIR="$HOME/scripts/git-security/state"
+STATE_DIR="$HOME/scripts/git-security/net-security/state"
 STATE_FILE="$STATE_DIR/panic_state"
 
 mkdir -p "$STATE_DIR"

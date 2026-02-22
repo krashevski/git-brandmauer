@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Подключаем init.sh проекта, чтобы определить SHARED_LIB, LOGS_DIR и т.д.
-source "$HOME/scripts/git-security/lib/init.sh"
+source "$HOME/scripts/git-security/net-security/lib/init.sh"
 
 echo "[SECURITY] Restoring network..."
 

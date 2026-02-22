@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================
-# git-security/lib/init.sh — единый файл инициализации общих скриптов для git-security
+# git-security/net-security/lib/init.sh — единый файл инициализации общих скриптов для git-security
 # -------------------------------------------------------------
 # Использование init.sh
 :<<'DOC'
-source "$(dirname "$0")/lib/init.sh"
+source "$(dirname "$0")/net-security/lib/init.sh"
 DOC
 
 # 1. Защита от повторной инициализации
