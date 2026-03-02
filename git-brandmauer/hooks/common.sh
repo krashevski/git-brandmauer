@@ -14,6 +14,8 @@ get_git_mode() {
     local repo
     repo="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo "")")"
     local mode_file="$HOME/.git-security/state/${repo}.mode"
+    # Проверка per-repo режима
+    mode_file="$HOME/.git-security/state/$(basename "$(git rev-parse --show-toplevel)").mode"
 
     if [[ -f "$mode_file" ]]; then
         mode="$(<"$mode_file")"
