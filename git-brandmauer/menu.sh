@@ -4,7 +4,6 @@
 set -euo pipefail
 
 STATE_DIR="$HOME/.git-security/state"
-
 REPO_LIST_FILE="$HOME/.git-security/repos.list"
 
 init_repo_list() {
@@ -87,7 +86,7 @@ manage_repositories() {
         echo " 2) Remove repository"
         echo " 3) List repositories"
         echo
-        echo "4) Back"
+        echo " 4) Back"
         echo -e "${BOLD}${CYAN}====================================================${RESET}"
         read -rp "Select: " choice
 
@@ -98,6 +97,13 @@ manage_repositories() {
                     echo "Already exists."
                 else
                     echo "$repo" >> "$REPO_LIST_FILE"
+                    # Создаём файл режима для нового репозитория, если его ещё нет
+                    repo_mode_file="$STATE_DIR/$repo.mode"
+                    mkdir -p "$STATE_DIR"
+                    if [[ ! -f "$repo_mode_file" ]]; then
+                        echo "SAFE" > "$repo_mode_file"
+                        info "Initialized mode for repository '$repo' → SAFE"
+                    fi
                     echo "Added."
                 fi
                 ;;
@@ -110,7 +116,7 @@ manage_repositories() {
             3)
                 echo
                 echo -e "${BOLD}${CYAN}====================================================${RESET}"
-                 echo -e "              ${BOLD}${CYAN}List repositorys ${RESET}"
+                echo -e "             ${BOLD}${CYAN}List repositories                      ${RESET}"
                 echo -e "${BOLD}${CYAN}====================================================${RESET}"
                 cat "$REPO_LIST_FILE"
                 ;;
