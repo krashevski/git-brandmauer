@@ -4,11 +4,13 @@
 
 ## Описание
 
-`GIT-SECURITY` помогает:
+git-security помогает:
 
-- Проверять состояние сети.
-- Включать или отключать сеть, изменять пароль при необходимости в аварийном режиме.
-- Регистрировать действия, связанные с безопасностью.
+Проверять состояние сети.
+
+Включать или отключать сеть, изменять пароль при необходимости в аварийном режиме.
+
+Регистрировать действия, связанные с безопасностью Git и сети.
 
 ## Операционные скрипты сетевой безопасности
 
@@ -18,16 +20,22 @@
 - `bin/burn-zip-archives.sh` — запись ZIP-архивов на CD/DVD.
 - `bin/menu.sh` — меню управления GIT-SECURITY.
 
+
 ## Скрипты Git-brandmauer
 
-- `bin/git` - обертка для тестирования git pull и git fetch
-- `hooks/common.sh` - скрипт определения режима
-- `hooks/enable_hooks.sh` - ручная настройка
-- `hooks/pre-fetch` - триггер хука git fetch
+- `chesk.sh` - 
+- `common.sh` - скрипт определения режима
+- `git-brandmauer-mode` - переключение режима текущего репозитория
+= `install.sh` - production Installer (hooks-only)
+- `menu.sh` - git-brandmauer interactive menu (per-repo)
+- `uninstall.sh` - git-brandmauer uninstall script
+- `hooks/pre-fetch` - ручная настройка
+- `hooks/pre-hook` - шаблон триггера хука для команды git
+- `hooks/pre-merge-commit` - триггер хука git merge
 - `hooks/pre-push` - триггер хука git push
 - `hook/pre-rebase` - триггер хука git rebase
 - `state/mode` - данные о состоянии
-- `menu/controlls.sh` - команды для тестирования
+
 
 ## Зависимости
 
@@ -39,7 +47,7 @@
 Если вы клонируете проект впервые:
 
 ```bash
-git clone --recurse-submodules https://github.com/krashevski/git-security.git
+git clone --recurse-submodules https://github.com/krashevski/git-security
 ```
 
 ## Установка git-security
@@ -47,7 +55,7 @@ git clone --recurse-submodules https://github.com/krashevski/git-security.git
 1. Клонируйте репозиторий:
 
 ```bash
-git clone https://github.com/krashevski/git_security.git
+git clone https://github.com/krashevski/git_security
 ```
 
 2. Перейдите в каталог проекта:
@@ -62,11 +70,21 @@ chmod +x *.sh
 
 ## Использование
 
-Запустите основной скрипт:
+Запустите основной скрипт сетевой безопасности:
 ```bash
 ./net-security/bin/menu.sh
 ```
 Логи создаются в каталоге ./logs.
+
+Запустите скрипт установки брандмауера:
+```bash
+./git-brandmauer/install.sh
+```
+
+Запустите скрипт управления брандмауером:
+```bash
+././git-brandmauer/menu.sh
+```
 
 ## Примечания
 

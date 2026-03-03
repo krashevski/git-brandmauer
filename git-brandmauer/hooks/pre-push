@@ -1,15 +1,27 @@
-#!/usr/bin/env bash
-# pre-push
+#!/bin/bash
+# =============================================================
+# Git pre-push
+# Blocks command in SAFE mode
+# =============================================================
 
-set -euo pipefail
+# Имя репозитория по имени директории
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
+MODE_FILE="$HOME/.git-security/state/$REPO_NAME.mode"
 
-HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$HOOK_DIR/common.sh"
-
-MODE="$(get_git_mode)"
-
-if [[ "$MODE" == "SAFE" ]]; then
-    die_security "git push is BLOCKED (SAFE MODE enabled)"
+# Читаем режим
+if [ -f "$MODE_FILE" ]; then
+    MODE=$(cat "$MODE_FILE")
+else
+    MODE="UNSAFE"
 fi
 
+# Список запрещённых команд для SAFE
+BLOCKED_COMMAND=$(basename "$0" | sed 's/pre-//') # push, commit, rebase, etc.
+
+if [ "$MODE" == "SAFE" ]; then
+    echo "[SECURITY] git $BLOCKED_COMMAND is DISABLED in SAFE mode"
+    exit 1
+fi
+
+# Разрешаем выполнение команды в UNSAFE режиме
 exit 0

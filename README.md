@@ -4,51 +4,57 @@ A set of scripts for secure Git management and network access control when worki
 
 ## Description
 
-`GIT-SECURITY` helps:
+git-security helps:
 
-- Check network status.
-- Enable or disable the network, change the password if necessary in emergency mode.
-- Log security-related actions.
+Check network status.
 
-## Operational scripts Net-security
+Enable or disable the network, change the password if necessary in emergency mode.
 
-- `bin/panic.sh` — controls network enablement and disablement and password changes for PANIC MODE (emergency shutdown).
-- `bin/network-pause.sh` - сentral network pause controller.
-- `bin/net-status.sh` - network status.
-- `bin/burn-zip-archives.sh` - burning ZIP archives to CD/DVD.
-- `bin/menu.sh` - GIT-SECURITY control menu.
+Log actions related to Git and network security.
 
-## Git-brandmauer scripts
+## Network security operational scripts
 
-- `bin/git` - wrapper for testing git pull and git fetch
-- `hooks/common.sh` - mode definition script
-- `hooks/enable_hooks.sh` - manual setup
-- `hooks/pre-fetch` - git fetch hook trigger
+- `bin/panic.sh` — manages enabling and disabling the network, as well as changing passwords for panic mode (emergency shutdown).
+- `bin/network-pause.sh` — central network pause controller.
+- `bin/net-status.sh` — network status.
+- `bin/burn-zip-archives.sh` — burning ZIP archives to CD/DVD.
+- `bin/menu.sh` — GIT-SECURITY management menu.
+
+## Git-brandmauer Scripts
+
+- `chesk.sh` -
+- `common.sh` - mode detection script
+- `git-brandmauer-mode` - mode switching for the current repository
+= `install.sh` - production Installer (hooks-only)
+- `menu.sh` - git-brandmauer interactive menu (per-repo)
+- `uninstall.sh` - git-brandmauer uninstall script
+- `hooks/pre-fetch` - manual configuration
+- `hooks/pre-hook` - hook trigger template for the git command
+- `hooks/pre-merge-commit` - git merge hook trigger
 - `hooks/pre-push` - git push hook trigger
-- `hooks/pre-rebase` - git rebase hook trigger
-- `state/mode` - status data
-- `menu/controlls.sh` - commands to test
+- `hook/pre-rebase` - git rebase hook trigger
+- `state/mode` - state data
 
 ## Dependencies
 
 `git-security` uses shared functions from the [`shared-lib`](https://github.com/krashevski/shared-lib) library.
 
-For the project to work, you need to include `shared-lib` in the `shared-lib` directory.
+For the project to work, `shared-lib` must be included in the `lib/shared-lib` directory.
 
 ### Installing `shared-lib` via a submodule
 
 If you are cloning the project for the first time:
 
 ```bash
-git clone --recurse-submodules https://github.com/krashevski/git-security.git
+git clone --recurse-submodules https://github.com/krashevski/git-security
 ```
 
-## Installation git-security
+## Installing git-security
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/krashevski/git_security.git
+git clone https://github.com/krashevski/git_security
 ```
 
 2. Change to the project directory:
@@ -56,22 +62,33 @@ git clone https://github.com/krashevski/git_security.git
 cd git-security
 ```
 
-3. Grant execute permissions for the scripts:
+3. Grant execute permissions to the scripts:
 ```bash
 chmod +x *.sh
 ```
 
 ## Usage
 
-Run the main script:
+Run the main network security script:
 ```bash
 ./net-security/bin/menu.sh
 ```
 Logs are created in the ./logs directory.
 
+Run the firewall installation script:
+```bash
+./git-brandmauer/install.sh
+```
+
+Run the firewall management script:
+```bash
+././git-brandmauer/menu.sh
+```
+
 ## Notes
 
-* Scripts were tested in the home environment (~/.scripts/git_security).
+* The scripts were tested in a home environment (~/.scripts/git_security).
+
 * Can also be used in test mode by changing the log paths and status.
 
 ## License
@@ -80,4 +97,4 @@ MIT
 
 ## Author
 
-Vladislav Krashevski with support ChatGPT
+Vladislav Krashevsky, ChatGPT support

@@ -1,173 +1,138 @@
 #!/usr/bin/env bash
-# git-brandmauer install script
+# =============================================================
+# Git-Brandmauer 2.1 — Production Installer (hooks-only)
+# =============================================================
 
 set -euo pipefail
 
-# ========= CONFIG =========
+# ================= CONFIG =================
 SECURITY_ROOT="$HOME/.git-security"
 HOOKS_DIR="$SECURITY_ROOT/hooks"
 STATE_DIR="$SECURITY_ROOT/state"
-MODE_FILE="$STATE_DIR/mode"
+BIN_DIR="$HOME/.local/bin"
 
-LOCAL_BIN="$HOME/.local/bin"
-WRAPPER_SRC="$(cd "$(dirname "$0")" && pwd)/bin/git"
-WRAPPER_DST="$LOCAL_BIN/git"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOKS_SRC="$SCRIPT_DIR/hooks"
+COMMON_SRC="$SCRIPT_DIR/common.sh"
+MODE_SRC="$SCRIPT_DIR/git-brandmauer-mode"
 
-# ========= INSTALL git-brandmauer-mode =========
-MODE_SCRIPT_SRC="$(cd "$(dirname "$0")" && pwd)/git-brandmauer-mode"
-MODE_SCRIPT_DST="$LOCAL_BIN/git-brandmauer-mode"
+COMMON_DST="$SECURITY_ROOT/common.sh"
+MODE_DST="$BIN_DIR/git-brandmauer-mode"
 
-INSTALL_MODE=false
-ADD_PATH=false
+REAL_GIT="$(command -v git)"
 
-DRY_RUN=false
-INSTALL_WRAPPER=false
-FORCE_WRAPPER=false
+# ================= LOGGING =================
+info() { printf "[INFO] %s\n" "$*"; }
+warn() { printf "[WARN] %s\n" "$*" >&2; }
+error() { printf "[ERROR] %s\n" "$*" >&2; exit 1; }
 
-# ========= UTILS =========
-log()  { echo "[INFO] $*"; }
-warn() { echo "[WARN] $*" >&2; }
-die()  { echo "[ERROR] $*" >&2; exit 1; }
-
-run() {
-    if $DRY_RUN; then
-        echo "[DRY-RUN] $*"
-    else
-        "$@"
-    fi
+# ================= VALIDATION =================
+require_git() {
+    [[ -n "$REAL_GIT" ]] || error "Git not found in PATH"
 }
 
-# ========= ARG PARSING =========
-for arg in "$@"; do
-    case "$arg" in
-        --with-wrapper)   INSTALL_WRAPPER=true ;;
-        --with-mode)      INSTALL_MODE=true ;;
-        --force-wrapper)  FORCE_WRAPPER=true ;;
-        --add-path)       ADD_PATH=true ;;
-        --dry-run)        DRY_RUN=true ;;
-        --help)
-            cat <<EOF
-git-brandmauer install script
-
-Usage:
-  ./install.sh [options]
-
-Options:
-  --with-wrapper    Install git UX wrapper (~/.local/bin/git)
-  --with-mode       Install 
-  --force-wrapper   Overwrite existing git wrapper
-  --add-path        $PATH — пользовательская политика
-  --dry-run         Show actions without applying
-  --help            Show this help
-EOF
-            exit 0
-            ;;
+validate_mode_file() {
+    local file="$1"
+    local mode
+    mode="$(cat "$file")"
+    case "$mode" in
+        SAFE|NORMAL|OPEN) ;;
         *)
-            die "Unknown option: $arg"
+            warn "Invalid mode detected in $file → resetting to SAFE"
+            echo "SAFE" > "$file"
             ;;
     esac
-done
-
-# Функция добавления пути
-add_path() {
-    local line='export PATH="$HOME/.local/bin:$PATH"'
-
-    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        [[ -f "$rc" ]] || continue
-
-        if grep -q "$line" "$rc"; then
-            log "PATH already configured in $(basename "$rc")"
-        else
-            log "Adding ~/.local/bin to PATH in $(basename "$rc")"
-            run sh -c "echo '' >> '$rc'"
-            run sh -c "echo '# git-brandmauer' >> '$rc'"
-            run sh -c "echo '$line' >> '$rc'"
-        fi
-    done
 }
 
-# ========= INSTALL CORE =========
-log "Installing git-brandmauer core..."
+# ================= INSTALL STEPS =================
+create_directories() {
+    info "Creating directories"
+    mkdir -p "$HOOKS_DIR" "$STATE_DIR" "$BIN_DIR"
+}
 
-run mkdir -p "$HOOKS_DIR" "$STATE_DIR"
+install_hooks() {
+    [[ -d "$HOOKS_SRC" ]] || error "Hooks source not found: $HOOKS_SRC"
 
-if [[ ! -f "$MODE_FILE" ]]; then
-    log "Initializing mode to SAFE"
-    run sh -c "echo SAFE > '$MODE_FILE'"
-else
-    log "Mode file exists: $(cat "$MODE_FILE")"
-fi
+    info "Installing hooks"
+    cp -f "$HOOKS_SRC"/* "$HOOKS_DIR/"
+    chmod +x "$HOOKS_DIR"/*
+}
 
-log "Setting global git hooksPath"
-run git config --global core.hooksPath "$HOOKS_DIR"
+install_policy_engine() {
+    [[ -f "$COMMON_SRC" ]] || error "common.sh not found"
 
-# ========= VERIFY =========
-CURRENT_HOOKS_PATH="$(git config --global core.hooksPath || true)"
-[[ "$CURRENT_HOOKS_PATH" == "$HOOKS_DIR" ]] \
-    || die "Failed to set core.hooksPath"
+    info "Installing policy engine"
+    cp -f "$COMMON_SRC" "$COMMON_DST"
+    chmod 0644 "$COMMON_DST"
+}
 
-log "HooksPath verified: $CURRENT_HOOKS_PATH"
+install_mode_switcher() {
+    [[ -f "$MODE_SRC" ]] || error "git-brandmauer-mode not found"
 
-# ========= INSTALL git-brandmauer-mode =========
-MODE_SCRIPT_SRC="$(cd "$(dirname "$0")" && pwd)/git-brandmauer-mode"
-MODE_SCRIPT_DST="$LOCAL_BIN/git-brandmauer-mode"
+    info "Installing mode switcher"
+    cp -f "$MODE_SRC" "$MODE_DST"
+    chmod +x "$MODE_DST"
+}
 
-if [[ -f "$MODE_SCRIPT_SRC" ]]; then
-    log "Installing git-brandmauer-mode"
-    run mkdir -p "$LOCAL_BIN"
-    run cp "$MODE_SCRIPT_SRC" "$MODE_SCRIPT_DST"
-    run chmod +x "$MODE_SCRIPT_DST"
+configure_git() {
+    info "Configuring global hooksPath"
+    "$REAL_GIT" config --global core.hooksPath "$HOOKS_DIR"
+}
 
-    if ! echo "$PATH" | grep -q "$LOCAL_BIN"; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-        warn "$LOCAL_BIN was not in PATH."
-        warn "Restart your shell or run: source ~/.bashrc"
+initialize_global_mode() {
+    local file="$STATE_DIR/global_mode"
+
+    if [[ ! -f "$file" ]]; then
+        info "Initializing global mode → SAFE"
+        echo "SAFE" > "$file"
     fi
 
-    log "git-brandmauer-mode installed at $MODE_SCRIPT_DST"
-else
-    warn "git-brandmauer-mode script not found, skipping installation"
-fi
+    validate_mode_file "$file"
+}
 
-# ========= INSTALL WRAPPER =========
-if $INSTALL_WRAPPER; then
-    log "Installing git UX wrapper"
+# ================= SELF-CHECK =================
+self_check() {
+    info "Running self-check"
 
-    [[ -f "$WRAPPER_SRC" ]] \
-        || die "Wrapper source not found: $WRAPPER_SRC"
+    local ok=true
 
-    run mkdir -p "$LOCAL_BIN"
-
-    if [[ -e "$WRAPPER_DST" && $FORCE_WRAPPER == false ]]; then
-        die "git already exists in $LOCAL_BIN (use --force-wrapper)"
+    if [[ "$("$REAL_GIT" config --global core.hooksPath)" != "$HOOKS_DIR" ]]; then
+        warn "hooksPath mismatch"
+        ok=false
     fi
 
-    run install -m 0755 "$WRAPPER_SRC" "$WRAPPER_DST"
+    [[ -r "$COMMON_DST" ]] || { warn "common.sh missing"; ok=false; }
+    [[ -x "$MODE_DST" ]] || { warn "mode switcher missing"; ok=false; }
 
-    if ! echo "$PATH" | grep -q "$LOCAL_BIN"; then
-        if ! $ADD_PATH; then
-            warn "$LOCAL_BIN is not in PATH"
-            warn "Add this to your shell config:"
-            warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
-        else
-            log "PATH will be active after restarting the shell"
-        fi
-
-        log "git wrapper installed at $WRAPPER_DST"
+    if command -v git-brandmauer-mode >/dev/null 2>&1; then
+        :
+    else
+        warn "git-brandmauer-mode not in PATH"
+        ok=false
     fi
-fi
 
+    if $ok; then
+        info "Self-check passed"
+    else
+        warn "Self-check detected issues"
+    fi
+}
 
-if $INSTALL_WRAPPER && $ADD_PATH; then
-    add_path
-fi
+# ================= MAIN =================
+main() {
+    info "Git-Brandmauer 2.1 installation started"
 
-if command -v git >/dev/null; then
-    log "git resolved to: $(command -v git)"
-fi
+    require_git
+    create_directories
+    install_hooks
+    install_policy_engine
+    install_mode_switcher
+    configure_git
+    initialize_global_mode
+    self_check
 
-# ========= DONE =========
-log "git-brandmauer installation complete"
-log "Restart your shell to activate git UX wrapper"
-log "You can enable full access with: echo OPEN > ~/.git-security/state/mode"
-echo "[INFO] Current mode: $(cat "$MODE_FILE")"
+    info "Installation complete"
+    info "Current global mode: $(cat "$STATE_DIR/global_mode")"
+}
+
+main "$@"

@@ -32,7 +32,7 @@ while true; do
     echo 
     echo -e " ${RED}0) Exit${RESET}"
     echo -e "${BOLD}${CYAN}====================================================${RESET}"
-    echo -n "Select option: "
+    echo -ne "${BOLD}${CYAN}Select option:  ${RESET}"
 
     read -r choice
     echo
@@ -45,9 +45,9 @@ while true; do
             "$SCRIPT_DIR/network-pause.sh"
             ;;
         3)
-            echo "[WARNING] PANIC MODE ACTIVATION"
+            echo -e "${YELLOW} PANIC MODE ACTIVATION ${RESET}"
 
-            read -rp "Are you sure? (yes/no): " confirm
+            read -rp " Are you sure? (yes/no): " confirm
 
             case "${confirm,,}" in
                 y|yes)

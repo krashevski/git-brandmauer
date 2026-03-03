@@ -1,21 +1,18 @@
 #!/bin/bash
 # =============================================================
-# Git pre-merge-commit
-# Blocks command in SAFE mode
+# Git pre-hook
+# Blocks commands in SAFE mode
 # =============================================================
 
-# Имя репозитория по имени директории
 REPO_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
 MODE_FILE="$HOME/.git-security/state/$REPO_NAME.mode"
 
-# Читаем режим
 if [ -f "$MODE_FILE" ]; then
     MODE=$(cat "$MODE_FILE")
 else
     MODE="UNSAFE"
 fi
 
-# Список запрещённых команд для SAFE
 BLOCKED_COMMAND=$(basename "$0" | sed 's/pre-//') # push, commit, rebase, etc.
 
 if [ "$MODE" == "SAFE" ]; then
@@ -23,5 +20,4 @@ if [ "$MODE" == "SAFE" ]; then
     exit 1
 fi
 
-# Разрешаем выполнение команды в UNSAFE режиме
 exit 0
