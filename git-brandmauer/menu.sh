@@ -6,6 +6,11 @@ set -euo pipefail
 STATE_DIR="$HOME/.git-security/state"
 REPO_LIST_FILE="$HOME/.git-security/repos.list"
 
+# Путь к директории этого скрипта
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Путь к net-security относительно git-brandmauer
+NET_DIR="$SCRIPT_DIR/../net-security"
+              
 init_repo_list() {
     if [[ ! -f "$REPO_LIST_FILE" ]]; then
         touch "$REPO_LIST_FILE"
@@ -68,9 +73,11 @@ show_menu() {
 
     repo_count=${#REPOS[@]}
     manage_index=$((repo_count+1))
+    network_index=$((repo_count+2))  # <-- вот здесь задаём переменную
 
-    echo
+    echo -e "${BOLD}Settings: ${RESET}"
     echo -e "  $manage_index) Manage repositories"
+    echo -e "  $network_index) Control network"
     echo
     echo -e "  0) Exit"
     echo -e "${BOLD}${CYAN}====================================================${RESET}"
@@ -135,6 +142,7 @@ select_repo() {
 
     repo_count=${#REPOS[@]}
     manage_index=$((repo_count+1))
+    network_index=$((repo_count+2))  # соответствует show_menu()
 
     # --- Exit ---
     if [[ "$choice" == "0" ]]; then
@@ -149,12 +157,27 @@ select_repo() {
         return 1
     fi
 
+    # --- Control network ---
+    if (( choice == network_index )); then
+        # NET_DIR относительно скрипта
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        NET_DIR="$SCRIPT_DIR/../net-security"
+
+        if [[ -x "$NET_DIR/menu.sh" ]]; then
+            "$NET_DIR/menu.sh"
+        else
+            echo -e "${RED}[ERROR] Network menu not found at $NET_DIR/menu.sh${RESET}"
+        fi
+        return 1
+    fi
+
     # --- Validate repo selection ---
     if (( choice < 1 || choice > repo_count )); then
         echo -e "${RED}[ERROR] Invalid choice${RESET}"
         return 1
     fi
 
+    # --- Set selected repo ---
     REPO="${REPOS[$((choice-1))]}"
     echo -e "Selected repository: ${CYAN}$REPO${RESET}"
 }
