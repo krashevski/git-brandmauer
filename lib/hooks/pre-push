@@ -57,8 +57,6 @@ elif [[ "$MODE" == "NORMAL" ]]; then
     exit 1
 fi
 
-echo "[DEBUG] pre-push hook triggered" >> /tmp/brandmauer-debug.log
-
 # ---------------- ALLOW ----------------
 log "git $BLOCKED_COMMAND allowed in $REPO ($MODE mode)"
 exit 0
