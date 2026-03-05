@@ -57,8 +57,6 @@ info "Copying library files..."
 sudo cp -r "$LIB_SRC/"* "$LIB_DIR/"
 sudo cp -r "$SHAREDLIB_SRC/"* "$SHAREDLIB_DIR/"
 
-sudo mkdir -p "$LIB_DIR/core"
-
 sudo cp -r "$LIB_SRC/core/"* "$LIB_DIR/core/"
 
 # ---------------- INSTALL HOOKS ----------------

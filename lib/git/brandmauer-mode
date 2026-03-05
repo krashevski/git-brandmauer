@@ -54,7 +54,7 @@ if [[ -f "$MODE_FILE" ]]; then
 fi
 
 # ---------------- SET NEW MODE ----------------
-echo "$MODE" > "$MODE_FILE"
+echo "$MODE" > "$MODE_FILE" || { error "Failed to write mode file"; exit 1; }
 info " Repository '$REPO' mode set to $MODE"
 
 # ---------------- OPTIONAL: DISPLAY CURRENT MODE ----------------

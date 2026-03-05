@@ -47,18 +47,6 @@ get_git_mode() {
     local repo_name
     repo_name="$(get_current_repo_name)"
 
-    local global_mode_file="$STATE_DIR/global_mode"
-
-    # --- GLOBAL MODE --- 
-    if [[ -f "$global_mode_file" ]]; then
-        local gmode
-        gmode="$(<"$global_mode_file")"
-        if [[ "$gmode" == "SAFE" ]]; then
-            echo "SAFE"
-            return
-        fi
-    fi
-
     # --- REPO MODE ---
     [[ -n "$repo_name" ]] || { echo "SAFE"; return; }
 
@@ -69,11 +57,20 @@ get_git_mode() {
         case "$mode" in
             OPEN|SAFE|NORMAL)
                 echo "$mode"
+                return
                 ;;
             *)
                 echo "SAFE"
+                return
                 ;;
         esac
+    fi
+
+    # --- GLOBAL MODE ---
+    local global_mode_file="$STATE_DIR/global_mode"
+    if [[ -f "$global_mode_file" ]]; then
+        echo "$( <"$global_mode_file" )"
+        return
     else
         echo "SAFE"
     fi

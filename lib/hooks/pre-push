@@ -23,13 +23,6 @@ LOG_FILE="$LOG_DIR/security.log"
 
 mkdir -p "$SECURITY_ROOT" "$LOG_DIR" "$GIT_DIR"
 
-# Подключаем общие функции
-if [[ -f "$COMMON" ]]; then
-    source "$COMMON"
-else
-    warn " common.sh missing — some features may not work" >> "$LOG_FILE"
-fi
-
 # ---------------- LOGGING ----------------
 log() {
     mkdir -p "$(dirname "$LOG_DIR")"
@@ -63,6 +56,8 @@ elif [[ "$MODE" == "NORMAL" ]]; then
     log "Blocked git $BLOCKED_COMMAND in $REPO (NORMAL)"
     exit 1
 fi
+
+echo "[DEBUG] pre-push hook triggered" >> /tmp/brandmauer-debug.log
 
 # ---------------- ALLOW ----------------
 log "git $BLOCKED_COMMAND allowed in $REPO ($MODE mode)"
