@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# =============================================================
+# Brandmauer Doctor — system diagnostics
+# =============================================================
+
+set -euo pipefail
+
+PREFIX="/usr/local"
+
+BIN_DIR="$PREFIX/bin"
+LIB_DIR="$PREFIX/lib/brandmauer"
+SHARE_DIR="$PREFIX/share/brandmauer"
+HOOKS_DIR="$SHARE_DIR/hooks"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+
+SECURITY_ROOT="$HOME/.git-security"
+STATE_DIR="$SECURITY_ROOT/state"
+
+LOG_DIR="$HOME/.local/share/brandmauer/logs"
+
+# ---------- helpers ----------
+
+ok() {
+    echo "[ OK ] $1"
+}
+
+warn() {
+    echo "[WARN] $1"
+}
+
+fail() {
+    echo "[FAIL] $1"
+}
+
+# ---------- header ----------
+
+echo
+echo "==============================="
+echo "      Brandmauer Doctor"
+echo "==============================="
+echo
+
+# ---------- git ----------
+
+if command -v git >/dev/null 2>&1; then
+    ok "Git installed"
+else
+    fail "Git not found in PATH"
+fi
+
+# ---------- hooksPath ----------
+
+HOOKS_PATH=$(git config --global core.hooksPath || true)
+
+if [[ "$HOOKS_PATH" == "$HOOKS_DIR" ]]; then
+    ok "Git hooksPath correctly configured"
+else
+    warn "hooksPath is $HOOKS_PATH"
+    warn "expected $HOOKS_DIR"
+fi
+
+# ---------- hooks directory ----------
+
+if [[ -d "$HOOKS_DIR" ]]; then
+    ok "Hooks directory exists"
+else
+    fail "Hooks directory missing: $HOOKS_DIR"
+fi
+
+# ---------- hooks executables ----------
+
+for hook in pre-push pre-fetch pre-rebase pre-merge-commit; do
+    if [[ -x "$HOOKS_DIR/$hook" ]]; then
+        ok "$hook executable"
+    else
+        warn "$hook missing or not executable"
+    fi
+done
+
+# ---------- shared-lib ----------
+
+if [[ -d "$SHAREDLIB_DIR" ]]; then
+    ok "shared-lib present"
+else
+    fail "shared-lib missing"
+fi
+
+# ---------- state directory ----------
+
+if [[ -d "$STATE_DIR" ]]; then
+    ok "state directory exists"
+else
+    warn "state directory missing (will be created automatically)"
+fi
+
+# ---------- log directory ----------
+
+if [[ -d "$LOG_DIR" ]]; then
+    ok "log directory exists"
+else
+    warn "log directory missing (will be created automatically)"
+fi
+
+echo
+echo "Doctor check completed."
+echo

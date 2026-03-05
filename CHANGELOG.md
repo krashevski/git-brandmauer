@@ -7,6 +7,43 @@ and the project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.4] - 2026-03-05
+
+### Added
+
+Initial stable release of **Brandmauer**.
+
+Features:
+
+- Git security firewall for repositories
+- SAFE / NORMAL / OPEN modes
+- Per-repository mode control
+- Global mode fallback
+- Git hooks enforcement:
+  - pre-push
+  - pre-fetch
+  - pre-rebase
+  - pre-merge-commit
+- Logging of blocked operations
+- CLI utilities:
+  - brandmauer
+  - brandmauer-git
+  - brandmauer-net
+  - brandmauer-mode
+- Global Git hooksPath installation
+- Bash completion support
+- System installer
+
+### Security
+
+- Fail-safe SAFE mode
+- Protection against recursive git calls
+- Centralized policy engine (common.sh)
+
+### Notes
+
+This release represents the first stable version of Brandmauer.
+
 ## [1.0.0] - 2026-03-04
 ### Added
 - **Smart hook installer** `smart-install-hooks.sh` for automatically updating only changed Git hooks

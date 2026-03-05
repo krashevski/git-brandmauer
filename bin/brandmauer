@@ -19,6 +19,7 @@ Commands:
   net        Network security tools
   status     Show system status
   version    Show version
+  doctor     Check completed
   help       Show this help
 EOF
 }
@@ -59,6 +60,9 @@ case "${1:-}" in
                 ;;
         esac
         ;;
+    doctor)
+        brandmauer-doctor
+    ;;
     *)
         error "Unknown command: $1"
         show_help

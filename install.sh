@@ -51,6 +51,7 @@ sudo install -m 755 "$BIN_SRC/brandmauer" "$BIN_DIR/"
 sudo install -m 755 "$BIN_SRC/brandmauer-git" "$BIN_DIR/"
 sudo install -m 755 "$BIN_SRC/brandmauer-net" "$BIN_DIR/"
 sudo install -m 755 "$MODE_SRC" "$BIN_DIR/"
+sudo install -m 755 "$BIN_SRC/brandmauer-doctor" "$BIN_DIR/"
 
 # ---------------- INSTALL LIBRARY ----------------
 info "Copying library files..."
