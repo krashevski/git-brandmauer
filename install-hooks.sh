@@ -4,11 +4,18 @@
 
 set -euo pipefail
 
-LIB_DIR="/usr/local/lib/brandmauer"
+# ---------------- CONFIG ----------------
+PREFIX="/usr/local"
+LIB_DIR="$PREFIX/lib/brandmauer"
 HOOKS_SRC="$LIB_DIR/hooks"
 HOOKS_DEST="$HOME/.git-security/hooks"
 
 mkdir -p "$HOOKS_DEST"
+
+# ---------------- LOGGING ----------------
+info() { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*" >&2; }
+error() { echo "[ERROR] $*" >&2; exit 1; }
 
 echo "[INFO] Checking hooks in $HOOKS_DEST..."
 

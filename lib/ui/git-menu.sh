@@ -3,15 +3,22 @@
 
 set -euo pipefail
 
+# ---------------- CONFIG ----------------
+PREFIX="/usr/local"
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+source "$SHAREDLIB_DIR/logging.sh"
+
 STATE_DIR="$HOME/.git-security/state"
 REPO_LIST_FILE="$HOME/.git-security/repos.list"
 
 # Путь к директории этого скрипта
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Путь к net-security относительно git-brandmauer
-LIB_DIR="/usr/local/lib/brandmauer"
+LIB_DIR="$PREFIX/lib/brandmauer"
+GIT_DIR="$LIB_DIR/git"
 NET_DIR="$LIB_DIR/net"
-              
+             
 init_repo_list() {
     if [[ ! -f "$REPO_LIST_FILE" ]]; then
         touch "$REPO_LIST_FILE"
@@ -27,10 +34,6 @@ YELLOW="\e[33m"
 CYAN="\e[36m"
 RESET="\e[0m"
 BOLD="\e[1m"
-
-info() {
-    echo -e "${CYAN}[INFO]${RESET} $*"
-}
 
 load_repos() {
     mapfile -t REPOS < "$REPO_LIST_FILE"
@@ -180,16 +183,22 @@ select_repo() {
 
     # --- Burn zip archives ---
     if (( choice == burn_zip_index )); then
-        if [[ -x "$NET_DIR/burn-zip-archives.sh" ]]; then
-            echo "DEBUG: executing burn-zip-archives.sh..."
-            "$NET_DIR/burn-zip-archives.sh"
-            echo "DEBUG: burn-zip-archives.sh finished"
+
+        # Проверка наличия CD/DVD привода
+        if [[ ! -e /dev/sr0 && ! -e /dev/cdrom && ! -e /dev/dvd ]]; then
+            warn " No CD/DVD drive detected."
+            warn " Please choose another archive backup method."
+            return 1
+        fi
+
+        if [[ -x "$GIT_DIR/burn-zip-archives.sh" ]]; then
+            "$GIT_DIR/burn-zip-archives.sh"
         else
-            echo -e "${RED}[ERROR] $NET_DIR/burn-zip-archives.sh not found or not executable${RESET}"
+           echo -e "${RED}[ERROR] $GIT_DIR/burn-zip-archives.sh not found or not executable${RESET}"
         fi
 
         return 1
-    fi
+   fi
 
     # --- Validate repo selection ---
     if (( choice < 1 || choice > repo_count )); then
@@ -203,6 +212,7 @@ select_repo() {
 }
 
 network_menu() {
+    clear
     while true; do
         echo -e "${BOLD}${CYAN}====================================================${RESET}"
         echo -e "${BOLD}${CYAN}          NET-SECURITY CONTROL MENU                 ${RESET}"
@@ -233,24 +243,24 @@ network_menu() {
                         "$NET_DIR/panic.sh"
                         ;;
                     n|no|"")
-                        echo "[INFO] Panic cancelled"
+                        info " Panic cancelled"
                         ;;
                     *)
-                        echo "[WARN] Unknown answer: $confirm"
+                        warn " Unknown answer: $confirm"
                         ;;
                 esac
                 ;;
             0)
-                echo "[INFO] Returning to main menu..."
+                info " Returning to main menu..."
                 return 0   # <-- вместо exit 0
                 ;;
             *)
-                echo "[ERROR] Invalid option"
+                error " Invalid option"
                 ;;
          esac
 
          echo
-         read -rp "Press Enter to continue..."
+         read -rp " Press Enter to continue..."
         clear
     done
 }
@@ -273,7 +283,7 @@ select_mode() {
     MODE="${MODES[$((choice-1))]}"
     git_brandmauer_set_mode "$REPO" "$MODE"
 
-    echo -e "${CYAN}[INFO]${RESET} $REPO set to $(mode_color "$MODE")$MODE${RESET}"
+    info " $REPO set to $(mode_color "$MODE")$MODE"
 }
 
 while true; do

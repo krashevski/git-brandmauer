@@ -4,10 +4,15 @@
 set -euo pipefail
 
 # Подключаем core/init.sh Brandmauer
-LIB_DIR="/usr/local/lib/brandmauer"
+PREFIX="/usr/local"
+LIB_DIR="$PREFIX/lib/brandmauer"
 source "$LIB_DIR/core/init.sh"
 
-echo "[SECURITY] Emergency network shutdown..."
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+source "$SHAREDLIB_DIR/logging.sh"
+
+security " Emergency network shutdown..."
 nmcli networking off
 
-log "[ACTION] Network disabled (emergency)"
+action " Network disabled (emergency)"

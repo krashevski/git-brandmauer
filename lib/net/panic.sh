@@ -4,9 +4,14 @@
 set -euo pipefail
 
 # Подключаем core/init.sh
-LIB_DIR="/usr/local/lib/brandmauer"
+PREFIX="/usr/local"
+LIB_DIR="$PREFIX/lib/brandmauer"
 source "$LIB_DIR/core/init.sh"
-source "$LIB_DIR/net/net.sh"
+
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+source "$SHAREDLIB_DIR/net.sh"
+source "$SHAREDLIB_DIR/logging.sh"
 
 # Каталог net-security внутри Brandmauer
 SCRIPT_DIR="$LIB_DIR/net"
@@ -33,30 +38,30 @@ COUNT=$((COUNT + 1))
 case "$COUNT" in
     1)
         "$SCRIPT_DIR/emergency_net_off.sh"
-        echo "[OK] Network is disabled for 10 seconds"
+        ok " Network is disabled for 10 seconds"
         sleep 10
         "$SCRIPT_DIR/emergency_net_on.sh"
         wait_net_up "$SCRIPT_DIR/net_check.sh" || true
         ;;
     2)
         "$SCRIPT_DIR/emergency_net_off.sh"
-        echo "[OK] Network is disabled for 5 minutes"
+        ok " Network is disabled for 5 minutes"
         sleep 300
         "$SCRIPT_DIR/emergency_net_on.sh"
         wait_net_up "$SCRIPT_DIR/net_check.sh" || true
         ;;
     3)
         if "$SCRIPT_DIR/passwd_offline.sh"; then
-            echo "[OK] Password changed successfully"
+            ok " Password changed successfully"
             "$SCRIPT_DIR/emergency_net_on.sh"
             wait_net_up "$SCRIPT_DIR/net_check.sh" || true
         else
-            echo "[ERROR] Password was NOT changed"
+            error " Password was NOT changed"
         fi
         ;;
     4)
         "$SCRIPT_DIR/emergency_net_off.sh"
-        echo "[SECURITY] There is a serious network issue. Please contact support."
+        security " There is a serious network issue. Please contact support."
         COUNT=0
         ;;
     *)

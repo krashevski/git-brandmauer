@@ -4,15 +4,18 @@
 set -euo pipefail
 
 # Подключаем core/init.sh для Brandmauer
-source "$HOME/.git-security/core/init.sh"
+PREFIX="/usr/local"
+LIB_DIR="$PREFIX/lib/brandmauer"
+source "$LIB_DIR/core/init.sh"
 
 # Каталоги и файлы
-NET_DIR="$SECURITY_ROOT/net"
-STATE_FILE="$NET_DIR/state/panic_state"
+NET_DIR="$LIB_DIR/net"
+STATE_DIR="$HOME/.local/share/brandmauer/state"
+STATE_FILE="$STATE_DIR/panic_state"
 LOG_DIR="$HOME/.local/share/brandmauer/logs"
-LOG_FILE="$LOG_DIR/git-security.log"
+LOG_FILE="$LOG_DIR/passwd-offline.log"
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$STATE_DIR"
 
 # Проверка состояния сети
 NETWORK_STATE=$(nmcli networking)

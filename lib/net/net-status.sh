@@ -6,10 +6,12 @@
 set -euo pipefail
 
 # Подключаем init.sh Brandmauer для определения путей
-LIB_DIR="/usr/local/lib/brandmauer"
+PREFIX="/usr/local"
+LIB_DIR="$PREFIX/lib/brandmauer"
 source "$LIB_DIR/core/init.sh"
 
-LOG_FILE="$LOG_DIR/brandmauer.log"
+LOG_DIR="$HOME/.local/share/brandmauer/logs"
+LOG_FILE="$LOG_DIR/net-status.log"
 mkdir -p "$LOG_DIR"
 
 log() {

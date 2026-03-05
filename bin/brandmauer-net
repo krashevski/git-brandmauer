@@ -12,6 +12,6 @@ source "$LIB_DIR/git/common.sh"
 
 info "Launching Network security module..."
 
-# Здесь подключается net-security
+exec "$LIB_DIR/ui/net-menu.sh"
 
 echo "Network module ready."

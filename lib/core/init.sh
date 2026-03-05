@@ -3,19 +3,29 @@
 
 set -euo pipefail
 
-info()  { echo "[INFO] $*"; }
-warn()  { echo "[WARN] $*"; }
-error() { echo "[ERROR] $*" >&2; }
+# Цвета
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+CYAN="\e[36m"
+RESET="\e[0m"
+BOLD="\e[1m"
+
+PREFIX="/usr/local"
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+source "$SHAREDLIB_DIR/logging.sh"
 
 # Каталог с бинарниками CLI (brandmauer-git, brandmauer-net)
 BASE_DIR="/usr/local/bin"
+BIN_DIR="$PREFIX/bin"
 
 # Каталог библиотеки
-LIB_DIR="/usr/local/lib/brandmauer"
-
+LIB_DIR="$PREFIX/lib/brandmauer"
+SHARE_DIR="$PREFIX/share/brandmauer"
+HOOKS_DIR="$SHARE_DIR/hooks"
 SECURITY_ROOT="$HOME/.git-security"
 STATE_DIR="$SECURITY_ROOT/state"
-HOOKS_DIR="$SECURITY_ROOT/hooks"
 LOG_DIR="$HOME/.local/share/brandmauer/logs"
 
 # -------- LOGGING --------
@@ -36,6 +46,7 @@ fi
 
 log "Brandmauer core initialized"
 
-echo "[INFO] Brandmauer core initialized."
-echo "[INFO] Directories created: $STATE_DIR, $HOOKS_DIR, $LOG_DIR"
-echo "[INFO] Global mode file: $GLOBAL_MODE_FILE"
+info " Brandmauer core initialized."
+info " Directories created: $STATE_DIR, $SHARE_DIR, $HOOKS_DIR, $LOG_DIR"
+info " Global mode file: $GLOBAL_MODE_FILE"
+echo -e "${BOLD}${CYAN}----------------------------------------------------${RESET}"

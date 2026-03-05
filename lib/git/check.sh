@@ -5,7 +5,9 @@ SECURITY_ROOT="$HOME/.git-security"
 STATE_DIR="$SECURITY_ROOT/state"
 REAL_GIT="${REAL_GIT:-$(command -v git || true)}"
 [[ -x "$REAL_GIT" ]] || { echo "[ERROR] git not found"; exit 1; }
-COMMON="$SECURITY_ROOT/common.sh"
+LIB_DIR="/usr/local/lib/brandmauer"
+GIT_DIR="$LIB_DIR/git"
+COMMON="$GIT_DIR/common.sh"
 
 [[ -f "$COMMON" ]] || { echo "[ERROR] common.sh missing"; exit 1; }
 source "$COMMON"

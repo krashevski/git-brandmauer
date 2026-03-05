@@ -14,6 +14,6 @@ info "Launching Git protection module..."
 
 # Здесь ты можешь подключить свой git-brandmauer
 # Например:
-exec "$LIB_DIR/ui/menu.sh"
+exec "$LIB_DIR/ui/git-menu.sh"
 
 echo "Git module ready."

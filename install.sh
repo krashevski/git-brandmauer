@@ -9,9 +9,9 @@ set -euo pipefail
 PREFIX="/usr/local"
 BIN_DIR="$PREFIX/bin"
 LIB_DIR="$PREFIX/lib/brandmauer"
-HOOKS_DIR="$LIB_DIR/hooks"
 SHARE_DIR="$PREFIX/share/brandmauer"
 HOOKS_DIR="$SHARE_DIR/hooks"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
 COMPLETIONS_DIR="/usr/share/bash-completion/completions"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_SRC="$SCRIPT_DIR/bin"
 LIB_SRC="$SCRIPT_DIR/lib"
 HOOKS_SRC="$SCRIPT_DIR/lib/hooks"
+SHAREDLIB_SRC="$SCRIPT_DIR/shared-lib"
 
 COMPLETIONS_SRC="$SCRIPT_DIR/completions"
 MODE_SRC="$LIB_SRC/git/brandmauer-mode"
@@ -35,13 +36,13 @@ command -v git >/dev/null 2>&1 || { error "Git not found in PATH"; }
 [[ -d "$BIN_SRC" ]] || error "bin directory not found: $BIN_SRC"
 [[ -d "$LIB_SRC" ]] || error "lib directory not found: $LIB_SRC"
 [[ -d "$HOOKS_SRC" ]] || error "hooks directory not found: $HOOKS_SRC"
+[[ -d "$SHAREDLIB_SRC" ]] || error "shared-lib directory not found: $SHARED_SRC"
 [[ -f "$MODE_SRC" ]] || error "brandmauer-mode not found: $MODE_SRC"
 
 # ---------------- CREATE DIRECTORIES ----------------
 info "Creating directories..."
-sudo mkdir -p "$BIN_DIR" "$LIB_DIR" "$SHARE_DIR" "$HOOKS_DIR" "$COMPLETIONS_DIR"
+sudo mkdir -p "$BIN_DIR" "$LIB_DIR" "$SHARE_DIR" "$HOOKS_DIR" "$SHAREDLIB_DIR" "$COMPLETIONS_DIR" 
 sudo mkdir -p "$LIB_DIR/core"
-sudo mkdir -p "$LIB_DIR/hooks"
 
 # ---------------- INSTALL BINARIES ----------------
 info "Installing CLI binaries..."
@@ -54,9 +55,9 @@ sudo install -m 755 "$MODE_SRC" "$BIN_DIR/"
 # ---------------- INSTALL LIBRARY ----------------
 info "Copying library files..."
 sudo cp -r "$LIB_SRC/"* "$LIB_DIR/"
+sudo cp -r "$SHAREDLIB_SRC/"* "$SHAREDLIB_DIR/"
 
 sudo mkdir -p "$LIB_DIR/core"
-sudo mkdir -p "$LIB_DIR/hooks"
 
 sudo cp -r "$LIB_SRC/core/"* "$LIB_DIR/core/"
 
@@ -78,14 +79,11 @@ if [[ -d "$COMPLETIONS_SRC" ]]; then
     done
 fi
 
-# ---------------- INSTALL BASH COMPLETIONS ----------------
-echo "[INFO] Installing git hooks..."
-bash "$SCRIPT_DIR/install-hooks.sh"
-
 # ---------------- FINAL CHECK ----------------
 info "Checking installation..."
 command -v brandmauer >/dev/null 2>&1 || warn "brandmauer CLI not found in PATH"
 [[ -d "$HOOKS_DIR" ]] || warn "Hooks directory missing: $HOOKS_DIR"
+[[ -d "$SHAREDLIB_DIR" ]] || warn "Shared-lib directory missing: $SHAREDLIB_DIR"
 [[ -d "$LIB_DIR" ]] || warn "Library directory missing: $LIB_DIR"
 
 info "Brandmauer 1.0 installation complete!"

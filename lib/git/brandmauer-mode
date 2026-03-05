@@ -5,7 +5,13 @@
 
 set -euo pipefail
 
-STATE_DIR="$HOME/.git-security/state"
+PREFIX="/usr/local"
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
+source "$SHAREDLIB_DIR/logging.sh"
+
+SECURITY_ROOT="$HOME/.git-security"
+STATE_DIR="$SECURITY_ROOT/state"
 
 # ---------------- ARGUMENT CHECK ----------------
 if [[ $# -ne 1 ]]; then
@@ -18,14 +24,14 @@ MODE="$1"
 case "$MODE" in
     SAFE|NORMAL|OPEN) ;;
     *)
-        echo "[ERROR] Invalid mode: $MODE"
+        error " Invalid mode: $MODE"
         exit 1
         ;;
 esac
 
 # ---------------- GIT REPOSITORY CHECK ----------------
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    echo "[ERROR] Not inside a git repository"
+    error " Not inside a git repository"
     exit 1
 fi
 
@@ -41,7 +47,7 @@ if [[ -f "$MODE_FILE" ]]; then
     case "$OLD_MODE" in
         SAFE|NORMAL|OPEN) ;;
         *)
-            echo "[WARN] Invalid existing mode in $MODE_FILE → resetting to SAFE"
+            warn " Invalid existing mode in $MODE_FILE → resetting to SAFE"
             echo "SAFE" > "$MODE_FILE"
             ;;
     esac
@@ -49,8 +55,8 @@ fi
 
 # ---------------- SET NEW MODE ----------------
 echo "$MODE" > "$MODE_FILE"
-echo "[INFO] Repository '$REPO' mode set to $MODE"
+info " Repository '$REPO' mode set to $MODE"
 
 # ---------------- OPTIONAL: DISPLAY CURRENT MODE ----------------
-echo "[INFO] Current mode file: $MODE_FILE"
+info " Current mode file: $MODE_FILE"
 cat "$MODE_FILE"
