@@ -68,3 +68,8 @@ while IFS= read -r path || [[ -n "$path" ]]; do
         auto "$repo -> SAFE (idle ${idle}s)"
     fi
 done < "$REPO_LIST"
+
+# Вызов git-menu.sh только если есть интерактивный терминал
+if [[ -t 1 ]]; then
+    "$LIB_DIR/git-menu.sh"
+fi
