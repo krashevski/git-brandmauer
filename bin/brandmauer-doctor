@@ -1,106 +1,95 @@
 #!/usr/bin/env bash
 # =============================================================
-# Brandmauer Doctor — system diagnostics
+# brandmauer-doctor — диагностика Brandmauer
 # =============================================================
 
 set -euo pipefail
 
+# ---------------- PATHS ----------------
 PREFIX="/usr/local"
-
-BIN_DIR="$PREFIX/bin"
-LIB_DIR="$PREFIX/lib/brandmauer"
-SHARE_DIR="$PREFIX/share/brandmauer"
-HOOKS_DIR="$SHARE_DIR/hooks"
-SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
-
 SECURITY_ROOT="$HOME/.git-security"
 STATE_DIR="$SECURITY_ROOT/state"
+REPO_LIST_FILE="$SECURITY_ROOT/repos.list"
+AUTO_FILE="$SECURITY_ROOT/automatic"
+TIME_FILE="$SECURITY_ROOT/automatic.time"
 
-LOG_DIR="$HOME/.local/share/brandmauer/logs"
+LIB_DIR="$PREFIX/lib/brandmauer/git"
+SHARE_DIR="$PREFIX/share/brandmauer"
+SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
 
-# ---------- helpers ----------
+# ---------------- SOURCE ----------------
+source "$LIB_DIR/state.sh"        # get_repo_mode / set_repo_mode
+source "$SHAREDLIB_DIR/logging.sh"
 
-ok() {
-    echo "[ OK ] $1"
-}
+# ---------------- INIT ----------------
+echo "[INFO]  Brandmauer core initialized."
 
-warn() {
-    echo "[WARN] $1"
-}
+mkdir -p "$STATE_DIR"
+mkdir -p "$SHARE_DIR/hooks"
+mkdir -p "$HOME/.local/share/brandmauer/logs"
 
-fail() {
-    echo "[FAIL] $1"
-}
-
-# ---------- header ----------
-
+echo "[INFO]  Directories created: $STATE_DIR, $SHARE_DIR, $SHARE_DIR/hooks, $HOME/.local/share/brandmauer/logs"
+echo "[INFO]  Global mode file: $STATE_DIR/global_mode"
+echo "----------------------------------------------------"
 echo
 echo "==============================="
 echo "      Brandmauer Doctor"
 echo "==============================="
 echo
 
-# ---------- git ----------
-
+# ---------------- CHECK GIT ----------------
 if command -v git >/dev/null 2>&1; then
-    ok "Git installed"
+    echo "[ OK ] Git installed"
 else
-    fail "Git not found in PATH"
+    echo "[FAIL] Git not found"
 fi
 
-# ---------- hooksPath ----------
+# ---------------- CHECK HOOKS ----------------
+HOOKS_DIR="$PREFIX/share/brandmauer/hooks"
+HOOKS=("pre-push" "pre-fetch" "pre-rebase" "brandmauer_hook.sh")
 
-HOOKS_PATH=$(git config --global core.hooksPath || true)
+[[ -d "$HOOKS_DIR" ]] || echo "[FAIL] Hooks directory missing"
 
-if [[ "$HOOKS_PATH" == "$HOOKS_DIR" ]]; then
-    ok "Git hooksPath correctly configured"
-else
-    warn "hooksPath is $HOOKS_PATH"
-    warn "expected $HOOKS_DIR"
-fi
-
-# ---------- hooks directory ----------
-
-if [[ -d "$HOOKS_DIR" ]]; then
-    ok "Hooks directory exists"
-else
-    fail "Hooks directory missing: $HOOKS_DIR"
-fi
-
-# ---------- hooks executables ----------
-
-for hook in pre-push pre-fetch pre-rebase pre-merge-commit; do
-    if [[ -x "$HOOKS_DIR/$hook" ]]; then
-        ok "$hook executable"
+for hook in "${HOOKS[@]}"; do
+    HOOK_PATH="$HOOKS_DIR/$hook"
+    if [[ -f "$HOOK_PATH" && -x "$HOOK_PATH" ]]; then
+        echo "[ OK ] $hook executable"
     else
-        warn "$hook missing or not executable"
+        echo "[WARN] $hook missing or not executable"
     fi
 done
 
-# ---------- shared-lib ----------
+# ---------------- CHECK DIRECTORIES ----------------
+[[ -d "$SHAREDLIB_DIR" ]] && echo "[ OK ] shared-lib present" || echo "[FAIL] shared-lib missing"
+[[ -d "$STATE_DIR" ]] && echo "[ OK ] state directory exists" || echo "[FAIL] state directory missing"
+[[ -d "$HOME/.local/share/brandmauer/logs" ]] && echo "[ OK ] log directory exists" || echo "[FAIL] log directory missing"
 
-if [[ -d "$SHAREDLIB_DIR" ]]; then
-    ok "shared-lib present"
+# ---------------- CHECK AUTOMATIC SAFE ----------------
+if [[ -f "$AUTO_FILE" ]]; then
+    auto_status=$(cat "$AUTO_FILE")
+    echo "[INFO] Automatic SAFE: $auto_status"
 else
-    fail "shared-lib missing"
+    echo "[INFO] Automatic SAFE: OFF"
 fi
 
-# ---------- state directory ----------
+# ---------------- CHECK REPOSITORIES ----------------
+echo
+echo "Repositories status:"
 
-if [[ -d "$STATE_DIR" ]]; then
-    ok "state directory exists"
+if [[ -f "$REPO_LIST_FILE" ]]; then
+    while IFS= read -r repo_path || [[ -n "$repo_path" ]]; do
+        [[ -z "$repo_path" ]] && continue
+        [[ -d "$repo_path/.git" ]] || { echo "[WARN] $repo_path is not a Git repo"; continue; }
+
+        repo_name=$(basename "$repo_path")
+        mode=$(get_repo_mode "$repo_name")
+        echo "[ OK ] $repo_name (mode: $mode)"
+    done < "$REPO_LIST_FILE"
 else
-    warn "state directory missing (will be created automatically)"
-fi
-
-# ---------- log directory ----------
-
-if [[ -d "$LOG_DIR" ]]; then
-    ok "log directory exists"
-else
-    warn "log directory missing (will be created automatically)"
+    echo "[WARN] Repository list not found"
 fi
 
 echo
-echo "Doctor check completed."
-echo
+echo "==============================="
+echo "       Doctor complete"
+echo "==============================="

@@ -101,7 +101,7 @@ manage_repositories() {
 
         case "$choice" in
             1)
-                read -rp "Enter repository path: " repo_input
+                read -rp "Enter repository name: " repo_input
                 # Попытка абсолютного пути
                 repo=$(realpath "$repo_input" 2>/dev/null || true)
                 # Если не существует, пробуем из стандартной папки скриптов
