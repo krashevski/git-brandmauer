@@ -65,9 +65,19 @@ info "Installing git hooks..."
 sudo cp -r "$HOOKS_SRC/"* "$HOOKS_DIR/"
 sudo chmod +x "$HOOKS_DIR/"*
 
+for hook in post-commit post-checkout post-merge; do
+sudo tee "$HOOKS_DIR/$hook" >/dev/null <<'EOF'
+#!/usr/bin/env bash
+/usr/local/share/brandmauer/hooks/brandmauer_hook.sh
+EOF
+sudo chmod +x "$HOOKS_DIR/$hook"
+done
+
 # ---------------- CONFIGURE GIT ----------------
 info "Configuring global git hooksPath..."
 git config --global core.hooksPath "$HOOKS_DIR"
+
+info "Creating Brandmauer git hooks..."
 
 # ---------------- INSTALL BASH COMPLETIONS ----------------
 if [[ -d "$COMPLETIONS_SRC" ]]; then

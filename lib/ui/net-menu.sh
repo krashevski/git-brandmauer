@@ -27,6 +27,7 @@ BOLD="\e[1m"
 
 network_menu() {
     while true; do
+        clear
         echo -e "${BOLD}${CYAN}====================================================${RESET}"
         echo -e "${BOLD}${CYAN}          NET-SECURITY CONTROL MENU                 ${RESET}"
         echo -e "${BOLD}${CYAN}====================================================${RESET}"

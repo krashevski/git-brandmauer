@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# git-brandmauer interactive menu (per-repo)
-
 set -euo pipefail
 
 # ---------------- CONFIG ----------------
@@ -12,18 +10,11 @@ source "$SHAREDLIB_DIR/logging.sh"
 STATE_DIR="$HOME/.git-security/state"
 REPO_LIST_FILE="$HOME/.git-security/repos.list"
 
-# Путь к директории этого скрипта
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Путь к net-security относительно git-brandmauer
 LIB_DIR="$PREFIX/lib/brandmauer"
 GIT_DIR="$LIB_DIR/git"
 NET_DIR="$LIB_DIR/net"
-             
-init_repo_list() {
-    if [[ ! -f "$REPO_LIST_FILE" ]]; then
-        touch "$REPO_LIST_FILE"
-    fi
-}
+UI_DIR="$LIB_DIR/ui"
 
 MODES=("SAFE" "NORMAL" "OPEN")
 
@@ -35,18 +26,15 @@ CYAN="\e[36m"
 RESET="\e[0m"
 BOLD="\e[1m"
 
-load_repos() {
-    mapfile -t REPOS < "$REPO_LIST_FILE"
-}
-
-init_repo_list
-load_repos
-
+# ---------------- INIT ----------------
+init_repo_list() { [[ -f "$REPO_LIST_FILE" ]] || touch "$REPO_LIST_FILE"; }
+load_repos() { mapfile -t REPOS < "$REPO_LIST_FILE"; }
 git_brandmauer_set_mode() {
     local repo="$1"
     local mode="$2"
     mkdir -p "$STATE_DIR"
-    echo "$mode" > "$STATE_DIR/${repo}.mode"
+    repo_name=$(basename "$repo")
+    echo "$mode" > "$STATE_DIR/${repo_name}.mode"
 }
 
 mode_color() {
@@ -58,36 +46,38 @@ mode_color() {
     esac
 }
 
+init_repo_list
+load_repos
+
+# ---------------- MENU FUNCTIONS ----------------
 show_menu() {
     clear
     echo -e "${BOLD}${CYAN}====================================================${RESET}"
     echo -e "               ${BOLD}${CYAN}GIT-BRANDMAUER MENU${RESET}"
     echo -e "${BOLD}${CYAN}====================================================${RESET}"
-    echo -e "${BOLD}Select repository to manage:${RESET}"
+    echo -e " ${BOLD}Select repository to manage:${RESET}"
 
     for i in "${!REPOS[@]}"; do
         repo="${REPOS[$i]}"
-        mode_file="$STATE_DIR/${repo}.mode"
-
-        if [[ -f "$mode_file" ]]; then
-            current_mode=$(<"$mode_file")
-        else
-            current_mode="SAFE"
-        fi
-
+        repo_name=$(basename "$repo")
+        mode_file="$STATE_DIR/${repo_name}.mode"
+        [[ -f "$mode_file" ]] && current_mode=$(<"$mode_file") || current_mode="SAFE"
         color_mode=$(mode_color "$current_mode")
-
-        echo -e "  $((i+1))) $repo (mode: ${color_mode}$current_mode${RESET})"
+        echo -e "  $((i+1))) $repo_name (mode: ${color_mode}$current_mode${RESET})"
     done
 
     repo_count=${#REPOS[@]}
     manage_index=$((repo_count+1))
-    network_index=$((repo_count+2))  # <-- вот здесь задаём переменную
-    burn_zip_index=$((repo_count+3))  # соответствует show_menu()
+    repos_index=$((repo_count+2))
+    settings_index=$((repo_count+3))
+    network_index=$((repo_count+4))
+    burn_zip_index=$((repo_count+5))
 
-    echo -e "${BOLD}Brandmauer settings: ${RESET}"
+    echo -e " ${BOLD}Brandmauer settings: ${RESET}"
     echo -e "  $manage_index) Manage repositories"
-    echo -e "${BOLD}Net-security: ${RESET}"
+    echo -e "  $repos_index) Close active repositories"
+    echo -e "  $settings_index) Automatic SAFE for commit, checkout, merge"
+    echo -e " ${BOLD}Net-security: ${RESET}"
     echo -e "  $network_index) Control network"
     echo -e "  $burn_zip_index) Burn zip archives"
     echo
@@ -111,26 +101,40 @@ manage_repositories() {
 
         case "$choice" in
             1)
-                read -rp "Enter repository name: " repo
-                if grep -qx "$repo" "$REPO_LIST_FILE"; then
+                read -rp "Enter repository path: " repo_input
+                # Попытка абсолютного пути
+                repo=$(realpath "$repo_input" 2>/dev/null || true)
+                # Если не существует, пробуем из стандартной папки скриптов
+                [[ -d "$repo/.git" ]] || repo="$HOME/scripts/$repo_input"
+
+                if [[ ! -d "$repo/.git" ]]; then
+                    echo "Not a git repository."
+                    continue
+                fi
+
+                if grep -qx "$repo" "$REPO_LIST_FILE" 2>/dev/null; then
                     echo "Already exists."
                 else
                     echo "$repo" >> "$REPO_LIST_FILE"
-                    # Создаём файл режима для нового репозитория, если его ещё нет
-                    repo_mode_file="$STATE_DIR/$repo.mode"
                     mkdir -p "$STATE_DIR"
-                    if [[ ! -f "$repo_mode_file" ]]; then
-                        echo "SAFE" > "$repo_mode_file"
-                        info "Initialized mode for repository '$repo' → SAFE"
-                    fi
+                    repo_name=$(basename "$repo")
+                    [[ ! -f "$STATE_DIR/$repo_name.mode" ]] && echo "SAFE" > "$STATE_DIR/$repo_name.mode"
+                    info "Initialized mode for repository '$repo_name' → SAFE"
                     echo "Added."
+                    load_repos
                 fi
                 ;;
             2)
-                read -rp "Enter repository name to remove: " repo
+                read -rp "Enter repository path to remove: " repo_input
+                repo=$(realpath "$repo_input" 2>/dev/null || true)
+                [[ -d "$repo/.git" ]] || repo="$HOME/scripts/$repo_input"
+
                 grep -vx "$repo" "$REPO_LIST_FILE" > "$REPO_LIST_FILE.tmp"
                 mv "$REPO_LIST_FILE.tmp" "$REPO_LIST_FILE"
+                repo_name=$(basename "$repo")
+                rm -f "$STATE_DIR/$repo_name.mode"
                 echo "Removed."
+                load_repos
                 ;;
             3)
                 echo
@@ -149,9 +153,31 @@ manage_repositories() {
     done
 }
 
+select_mode() {
+    repo_name=$(basename "$REPO")
+    mode_file="$STATE_DIR/$repo_name.mode"
+    [[ -f "$mode_file" ]] && MODE=$(<"$mode_file") || MODE="SAFE"
+
+    echo -e "${BOLD}Current mode for ${CYAN}$REPO${RESET}: $(mode_color "$MODE")$MODE${RESET}"
+    echo -e "${BOLD}Select new mode:${RESET}"
+    for i in "${!MODES[@]}"; do
+        color_mode=$(mode_color "${MODES[$i]}")
+        echo -e "  $((i+1))) ${color_mode}${MODES[$i]}${RESET}"
+    done
+
+    read -rp "Enter number: " choice
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#MODES[@]} )); then
+        echo -e "${RED}[ERROR] Invalid choice${RESET}"
+        return 1
+    fi
+
+    MODE="${MODES[$((choice-1))]}"
+    git_brandmauer_set_mode "$REPO" "$MODE"
+    info " $REPO set to $(mode_color "$MODE")$MODE"
+}
+
 select_repo() {
     read -rp "Enter number: " choice
-    # Проверяем, что введено число
     if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
         echo -e "${RED}[ERROR] Invalid choice${RESET}"
         return 1
@@ -159,133 +185,51 @@ select_repo() {
 
     repo_count=${#REPOS[@]}
     manage_index=$((repo_count+1))
-    network_index=$((repo_count+2))  # соответствует show_menu()
-    burn_zip_index=$((repo_count+3))  # соответствует show_menu()
+    repos_index=$((repo_count+2))
+    settings_index=$((repo_count+3))
+    network_index=$((repo_count+4))
+    burn_zip_index=$((repo_count+5))
 
-    # --- Exit ---
-    if [[ "$choice" == "0" ]]; then
-        echo "Exiting..."
-        exit 0
-    fi
+    # Exit
+    [[ "$choice" == "0" ]] && { echo "Exiting..."; exit 0; }
 
-    # --- Manage repositories ---
-    if (( choice == manage_index )); then
-        manage_repositories
-        load_repos
+    # Manage repositories
+    (( choice == manage_index )) && { manage_repositories; load_repos; return 1; }
+
+    # Close active repositories
+    (( choice == repos_index )) && {
+        if [[ -x "$GIT_DIR/close_active_repos.sh" ]]; then
+            "$GIT_DIR/close_active_repos.sh"
+        else
+            error "close_active_repos.sh not found"
+        fi
         return 1
-    fi
+    }
 
-    # --- Control network ---
-    if (( choice == network_index )); then
-        network_menu
-        return 1
-    fi
+    # Automatic SAFE
+    (( choice == settings_index )) && { "$UI_DIR/settings_menu.sh"; return 1; }
 
-    # --- Burn zip archives ---
-    if (( choice == burn_zip_index )); then
+    # Network
+    (( choice == network_index )) && { "$UI_DIR/net-menu.sh"; return 1; }
 
-        # Проверка наличия CD/DVD привода
+    # Burn zip
+    (( choice == burn_zip_index )) && {
         if [[ ! -e /dev/sr0 && ! -e /dev/cdrom && ! -e /dev/dvd ]]; then
-            warn " No CD/DVD drive detected."
-            warn " Please choose another archive backup method."
+            warn "No CD/DVD drive detected."
             return 1
         fi
-
-        if [[ -x "$GIT_DIR/burn-zip-archives.sh" ]]; then
-            "$GIT_DIR/burn-zip-archives.sh"
-        else
-           echo -e "${RED}[ERROR] $GIT_DIR/burn-zip-archives.sh not found or not executable${RESET}"
-        fi
-
+        [[ -x "$GIT_DIR/burn-zip-archives.sh" ]] && "$GIT_DIR/burn-zip-archives.sh" || echo -e "${RED}[ERROR] burn-zip-archives.sh not found${RESET}"
         return 1
-   fi
+    }
 
-    # --- Validate repo selection ---
-    if (( choice < 1 || choice > repo_count )); then
-        echo -e "${RED}[ERROR] Invalid choice${RESET}"
-        return 1
-    fi
+    # Validate repo selection
+    (( choice < 1 || choice > repo_count )) && { echo -e "${RED}[ERROR] Invalid choice${RESET}"; return 1; }
 
-    # --- Set selected repo ---
     REPO="${REPOS[$((choice-1))]}"
     echo -e "Selected repository: ${CYAN}$REPO${RESET}"
 }
 
-network_menu() {
-    clear
-    while true; do
-        echo -e "${BOLD}${CYAN}====================================================${RESET}"
-        echo -e "${BOLD}${CYAN}          NET-SECURITY CONTROL MENU                 ${RESET}"
-        echo -e "${BOLD}${CYAN}====================================================${RESET}"
-        echo " 1) Check network status"
-        echo " 2) Pause network (safe mode)"
-        echo " 3) PANIC MODE (emergency shutdown)"
-        echo 
-        echo -e " ${RED}0) Exit${RESET}"
-        echo -e "${BOLD}${CYAN}====================================================${RESET}"
-        echo -ne "${BOLD}${CYAN}Select option:  ${RESET}"
-
-        read -r choice
-        echo
-
-        case "$choice" in
-            1)
-                "$NET_DIR/net-status.sh"
-                ;;
-            2)              
-                "$NET_DIR/network-pause.sh"
-                ;;
-            3)
-                echo -e "${YELLOW} PANIC MODE ACTIVATION ${RESET}"
-                read -rp " Are you sure? (yes/no): " confirm
-                case "${confirm,,}" in
-                    y|yes)
-                        "$NET_DIR/panic.sh"
-                        ;;
-                    n|no|"")
-                        info " Panic cancelled"
-                        ;;
-                    *)
-                        warn " Unknown answer: $confirm"
-                        ;;
-                esac
-                ;;
-            0)
-                info " Returning to main menu..."
-                return 0   # <-- вместо exit 0
-                ;;
-            *)
-                error " Invalid option"
-                ;;
-         esac
-
-         echo
-         read -rp " Press Enter to continue..."
-        clear
-    done
-}
-
-select_mode() {
-    echo -e "${BOLD}Select mode for ${CYAN}$REPO${RESET}:"
-
-    for i in "${!MODES[@]}"; do
-        color_mode=$(mode_color "${MODES[$i]}")
-        echo -e "  $((i+1))) ${color_mode}${MODES[$i]}${RESET}"
-    done
-
-    read -rp "Enter number: " choice
-
-    if (( choice < 1 || choice > ${#MODES[@]} )); then
-        echo -e "${RED}[ERROR] Invalid choice${RESET}"
-        return 1
-    fi
-
-    MODE="${MODES[$((choice-1))]}"
-    git_brandmauer_set_mode "$REPO" "$MODE"
-
-    info " $REPO set to $(mode_color "$MODE")$MODE"
-}
-
+# ---------------- MAIN LOOP ----------------
 while true; do
     show_menu
     select_repo || continue

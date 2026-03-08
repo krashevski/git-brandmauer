@@ -94,7 +94,11 @@ action() {
     printf "%b[ACTION]%b %b\n" "$BLUE" "$NC" "$(say "$@")" | tee -a "$RUN_LOG"
 }
 
+auto() {
+    printf "%b[AUTO]%b %b\n" "$MAGENTA" "$NC" "$(say "$@")" | tee -a "$RUN_LOG"
+}
+
 # -------------------------------------------------------------
 # Экспорт say как readonly API
 # -------------------------------------------------------------
-readonly -f say ok info warn error die
+readonly -f say ok info warn error die auto security action

@@ -7,6 +7,7 @@ LIB_DIR="$PREFIX/lib/brandmauer"
 SHARE_DIR="$PREFIX/share/brandmauer"
 SECURITY_ROOT="$HOME/.git-security"
 STATE_DIR="$HOME/.local/share/brandmauer/state"
+HOOKS_DIR="$PREFIX/share/brandmauer/hooks"
 
 SHARE_DIR="$PREFIX/share/brandmauer"
 SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
@@ -15,6 +16,15 @@ source "$SHAREDLIB_DIR/logging.sh"
 echo "========================================"
 echo "        BRANDMAUER UNINSTALLER"
 echo "========================================"
+
+current=$(git config --global --get core.hooksPath || true)
+
+if [[ "$current" == "$HOOKS_DIR" ]]; then
+    echo "[INFO] Removing Brandmauer git hooksPath..."
+    git config --global --unset core.hooksPath
+else
+    echo "[INFO] core.hooksPath not managed by Brandmauer"
+fi
 
 # --- удаляем CLI ---
 if [[ -f "$BIN_FILE" ]]; then
@@ -34,7 +44,7 @@ if [[ -d "$SHARE_DIR" ]]; then
     sudo rm -rf "$SHARE_DIR"
 fi
 
-# --- удаляем share ---
+# --- удаляем .git-security ---
 if [[ -d "$SECURITY_ROOT" ]]; then
     info " Removing git-security data..."
     sudo rm -rf "$SECURITY_ROOT"

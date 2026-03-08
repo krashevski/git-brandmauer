@@ -1,62 +1,38 @@
 #!/usr/bin/env bash
 # =============================================================
-# Git pre-push hook — Brandmauer v1.0
-# Blocks commands in SAFE/NORMAL mode and logs events
+# Pre-hook for push/fetch/rebase — Brandmauer v1.0
+# Blocks commands if repo is in SAFE/NORMAL mode
 # =============================================================
 
 set -euo pipefail
 
-# ---------------- CONFIG ----------------
 PREFIX="/usr/local"
-SHARE_DIR="$PREFIX/share/brandmauer"
-SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
-source "$SHAREDLIB_DIR/logging.sh"
-
-# Основные пути
 LIB_DIR="$PREFIX/lib/brandmauer"
-GIT_DIR="$LIB_DIR/git"
-COMMON="$GIT_DIR/common.sh"
-
-SECURITY_ROOT="$HOME/.git-security"
+COMMON="$LIB_DIR/git/common.sh"
 LOG_DIR="$HOME/.local/share/brandmauer/logs"
 LOG_FILE="$LOG_DIR/security.log"
 
-mkdir -p "$SECURITY_ROOT" "$LOG_DIR" "$GIT_DIR"
+HOOKNAME="push"
 
-# ---------------- LOGGING ----------------
-log() {
-    mkdir -p "$(dirname "$LOG_DIR")"
-    echo "[$(date '+%F %T')] $*" >> "$LOG_FILE"
-}
+mkdir -p "$LOG_DIR"
 
-# ---------------- VALIDATION ----------------
-[[ -f "$COMMON" ]] || { error " common.sh missing"; exit 1; }
 source "$COMMON"
 
-# ---------------- DETERMINE COMMAND ----------------
-BLOCKED_COMMAND="push"  # pre-push hook всегда для push
-REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo '')")
+# --- Repo ---
+REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo 'unknown-repo')")
+
+# --- Mode ---
 MODE=$(get_git_mode)
 
-# ---------------- CHECK FORCE PUSH ----------------
-if [[ "$*" == *"--force"* ]]; then
-    security " [$REPO] Force push denied in $MODE mode."
-    log "Force push attempt blocked in $REPO ($MODE mode)"
+# --- Logging and policy enforcement ---
+timestamp() { date '+%F %T'; }
+
+if [[ "$MODE" == "SAFE" || "$MODE" == "NORMAL" ]]; then
+    echo "[$(timestamp)] [$REPO] git $HOOKNAME blocked in $MODE mode" >> "$LOG_FILE"
+    echo "[SECURITY] [$REPO] git $HOOKNAME is disabled in $MODE mode"
     exit 1
+else
+    echo "[$(timestamp)] [$REPO] git $HOOKNAME allowed in $MODE mode" >> "$LOG_FILE"
 fi
 
-# ---------------- ENFORCE POLICY ----------------
-if [[ "$MODE" == "SAFE" ]]; then
-    security " [$REPO] git $BLOCKED_COMMAND is DISABLED in SAFE mode."
-    log "Blocked git $BLOCKED_COMMAND in $REPO (SAFE)"
-    exit 1
-elif [[ "$MODE" == "NORMAL" ]]; then
-    # В NORMAL запрещаем только push
-    security " [$REPO] git $BLOCKED_COMMAND is DISABLED in NORMAL mode."
-    log "Blocked git $BLOCKED_COMMAND in $REPO (NORMAL)"
-    exit 1
-fi
-
-# ---------------- ALLOW ----------------
-log "git $BLOCKED_COMMAND allowed in $REPO ($MODE mode)"
 exit 0

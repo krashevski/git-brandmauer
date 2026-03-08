@@ -1,68 +1,38 @@
 #!/usr/bin/env bash
-# Git pre-<command> hook — Brandmauer v1.0
+# =============================================================
+# Pre-hook for push/fetch/rebase — Brandmauer v1.0
+# Blocks commands if repo is in SAFE/NORMAL mode
+# =============================================================
 
 set -euo pipefail
 
-# ---------------- CONFIG ----------------
 PREFIX="/usr/local"
-SHARE_DIR="$PREFIX/share/brandmauer"
-SHAREDLIB_DIR="$SHARE_DIR/shared-lib"
-source "$SHAREDLIB_DIR/logging.sh"
-
-# Основные пути
 LIB_DIR="$PREFIX/lib/brandmauer"
-GIT_DIR="$LIB_DIR/git"
-COMMON="$GIT_DIR/common.sh"
-SECURITY_ROOT="$HOME/.git-security"
+COMMON="$LIB_DIR/git/common.sh"
 LOG_DIR="$HOME/.local/share/brandmauer/logs"
 LOG_FILE="$LOG_DIR/security.log"
 
-mkdir -p "$SECURITY_ROOT" "$LOG_DIR" "$GIT_DIR"
+HOOKNAME="fetch"
 
-# Подключаем общие функции
-if [[ -f "$COMMON" ]]; then
-    source "$COMMON"
-else
-    warn " common.sh missing — some features may not work" >> "$LOG_FILE"
-fi
+mkdir -p "$LOG_DIR"
 
-# ---------------- LOG ----------------
-log() {
-    mkdir -p "$(dirname "$LOG_DIR")"
-    echo "[$(date '+%F %T')] $*" >> "$LOG_FILE"
-}
-
-[[ -f "$COMMON" ]] || { error " common.sh missing"; exit 1; }
 source "$COMMON"
 
-BLOCKED_COMMAND="fetch"  # заменить на push, fetch, rebase, merge-commit
-REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo '')")
+# --- Repo ---
+REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo 'unknown-repo')")
+
+# --- Mode ---
 MODE=$(get_git_mode)
 
-# ---------------- FORCE / SPECIAL FLAGS ----------------
-if [[ "$*" == *"--force"* ]]; then
-    security " [$REPO] Force $BLOCKED_COMMAND denied in $MODE mode."
-    log "Force $BLOCKED_COMMAND attempt blocked in $REPO ($MODE)"
+# --- Logging and policy enforcement ---
+timestamp() { date '+%F %T'; }
+
+if [[ "$MODE" == "SAFE" || "$MODE" == "NORMAL" ]]; then
+    echo "[$(timestamp)] [$REPO] git $HOOKNAME blocked in $MODE mode" >> "$LOG_FILE"
+    echo "[SECURITY] [$REPO] git $HOOKNAME is disabled in $MODE mode"
     exit 1
+else
+    echo "[$(timestamp)] [$REPO] git $HOOKNAME allowed in $MODE mode" >> "$LOG_FILE"
 fi
 
-# ---------------- POLICY ----------------
-case "$BLOCKED_COMMAND" in
-    push|fetch|rebase|merge-commit)
-        if [[ "$MODE" == "SAFE" ]]; then
-            security " [$REPO] git $BLOCKED_COMMAND is DISABLED in SAFE mode."
-            log "Blocked git $BLOCKED_COMMAND in $REPO (SAFE)"
-            exit 1
-        elif [[ "$MODE" == "NORMAL" ]]; then
-            # например, NORMAL блокирует push/fetch/rebase, но разрешает merge-commit
-            if [[ "$BLOCKED_COMMAND" != "merge-commit" ]]; then
-                security " [$REPO] git $BLOCKED_COMMAND is DISABLED in NORMAL mode."
-                log "Blocked git $BLOCKED_COMMAND in $REPO (NORMAL)"
-                exit 1
-            fi
-        fi
-        ;;
-esac
-
-log "git $BLOCKED_COMMAND allowed in $REPO ($MODE)"
 exit 0
