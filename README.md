@@ -1,5 +1,9 @@
 # Git-Brandmauer
 
+[![Repo Size](https://img.shields.io/github/repo-size/krashevski/git-brandmauer?style=flat-square)](https://github.com/krashevski/git-brandmauer)
+[![Stars](https://img.shields.io/github/stars/krashevski/git-brandmauer?style=flat-square)](https://github.com/krashevski/git-brandmauer)
+[![License](https://img.shields.io/github/license/krashevski/git-brandmauer?style=flat-square)](https://github.com/krashevski/git-brandmauer)
+
 **Languages:** [🇬🇧 English](README.md) | [🇷🇺 Русский](/docs/RU/README_RU.md) | [🇯🇵 日本語](/docs/JA/README_JA.md)
 
 **Git-Brandmauer** is a **modular framework for secure Git repository management and network control**. 
